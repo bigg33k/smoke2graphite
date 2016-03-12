@@ -84,8 +84,7 @@ CARBONHOST=config.get('CARBON','CARBONHOST')
 CARBONPORT=int(config.get('CARBON','CARBONPORT'))
 CARBONPREFIX=config.get('CARBON','CARBONPREFIX')
 
-print CARBONHOST
-print CARBONPORT
+print "%s:%s" %(CARBONHOST,CARBONPORT)
 
 #get files and directories
 rrds = []
@@ -144,7 +143,7 @@ for f in rrds:
 				payload="%s.%s.%s.%s %s\n" % (CARBONPREFIX,HOST,menu[0],message.lstrip(),timestamp)
 				
 				#write to graphite
-				print 'sending message: %s' % payload
+				#print 'sending message: %s' % payload
 				sock = socket.socket()
 				sock.connect((CARBONHOST, CARBONPORT))
 				sock.sendall(payload)
@@ -154,3 +153,5 @@ for f in rrds:
 		
 
 
+end_time = datetime.now()
+print('Ended: {}'.format(end_time))
