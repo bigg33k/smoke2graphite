@@ -9,11 +9,15 @@ import string
 import ConfigParser
 import statsd
 
-statsd.Connection.set_defaults(host='graphite.bigg33k.net')
-timer = statsd.Timer('smoke2graphite')
-timer2 = statsd.Timer('smoke2graphite')
+config = ConfigParser.ConfigParser()
+config.readfp(open('/home/pi/smoke2graphite/s2g.conf'))
 
-#os.nice(15)
+usestatsd=config.get('CARBON','STATS')
+
+if "true" in usestatsd:  
+	stats = statsd.Connection.set_defaults(host='graphite.bigg33k.net')
+	timer = statsd.Timer('smoke2graphite')
+	timer2 = statsd.Timer('smoke2graphite')
 
 def get_filepaths(directory):
     """
@@ -22,25 +26,33 @@ def get_filepaths(directory):
     directory in the tree rooted at directory top (including top itself), 
     it yields a 3-tuple (dirpath, dirnames, filenames).
     """
-    timer2.start()
+
+    if "true" in usestatsd:
+    	timer2.start() #timer for function
+    
+    filecounter=0
     file_paths = []  # List which will store all of the full filepaths.
 
     # Walk the tree.
     for root, directories, files in os.walk(directory):
         for filename in files:
+	    filecounter+=1
             # Join the two strings in order to form the full filepath.
             filepath = os.path.join(root, filename)
             file_paths.append(filepath)  # Add it to the list.
-    timer2.stop('get_filespaths')
+
+    if "true" in usestatsd:
+    	timer2.stop('get_filespaths') #end timer
+    
+    print 'Files processed: %i' % filecounter
     return file_paths  # Self-explanatory.
 #------------------------------------------------------
 
-timer.start()
+if "true" in usestatsd:
+	timer.start()
+
 start_time = datetime.now()
 print('Started: {}'.format(start_time))
-
-config = ConfigParser.ConfigParser()
-config.readfp(open('/home/pi/smoke2graphite/s2g.conf'))
 
 
 #load stuff from configs
@@ -54,12 +66,11 @@ print "%s:%s" %(CARBONHOST,CARBONPORT)
 rrds = []
 rrds = get_filepaths(config.get('Smokeping','SMOKEPINGDATA'))
 MASTER = config.get('Smokeping','SMOKEMASTER') 
-
-timestamp=0;
+count=0
+timestamp=0
 smokestr = []
 smokedata = []
 for f in rrds:
-	filecount=statsd.Counter('smoke2graphite')
 	if f.endswith(".rrd"):
 		host = f.split('/')
 		linesize=len(host)-1
@@ -115,10 +126,12 @@ for f in rrds:
 				sock.close()
 			message=""
 			count+=1
-	filecount+=1	
 
-print 'Files processed: %i' % len(rrds)
+print 'Files on disk: %i' % len(rrds)
+
 end_time = datetime.now()
 print('Ended: {}'.format(end_time))
-timer.stop('main_loop')
+
+if "true" in usestatsd:
+	timer.stop('main_loop')
 
