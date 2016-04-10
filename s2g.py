@@ -10,14 +10,15 @@ import ConfigParser
 import statsd
 
 config = ConfigParser.ConfigParser()
-config.readfp(open('/home/pi/smoke2graphite/s2g.conf'))
+config.readfp(open('/home/pi/s2g/s2g.conf'))
 
 usestatsd=config.get('CARBON','STATS')
 
 if "true" in usestatsd:  
-	stats = statsd.Connection.set_defaults(host='graphite.bigg33k.net')
+	stats = statsd.Connection.set_defaults(host='[GRAPHITEHOST]')
 	timer = statsd.Timer('smoke2graphite')
 	timer2 = statsd.Timer('smoke2graphite')
+	gauge = statsd.Gauge('smoke2graphite')
 
 def get_filepaths(directory):
     """
@@ -43,6 +44,7 @@ def get_filepaths(directory):
 
     if "true" in usestatsd:
     	timer2.stop('get_filespaths') #end timer
+	gauge.send('files', filecounter)
     
     print 'Files processed: %i' % filecounter
     return file_paths  # Self-explanatory.
@@ -127,7 +129,6 @@ for f in rrds:
 			message=""
 			count+=1
 
-print 'Files on disk: %i' % len(rrds)
 
 end_time = datetime.now()
 print('Ended: {}'.format(end_time))
